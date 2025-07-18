@@ -1,4 +1,6 @@
 from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QComboBox, QPushButton, QLabel, QTextEdit
+from chinese_calendar import is_workday
+from datetime import datetime, timedelta
 import sys
 
 class DateSelector(QMainWindow):
@@ -45,7 +47,32 @@ class DateSelector(QMainWindow):
 
     def on_submit(self):
         selected_date = self.date_combo.currentText()
-        self.output_text.setText(f'选择的日期: {selected_date}')
+        try:
+            # 将选择的年月转换为日期对象
+            date_obj = datetime.strptime(selected_date + ".01", "%Y.%m.%d").date()
+            
+            # 获取该月的最后一天
+            if date_obj.month == 12:
+                next_month = date_obj.replace(year=date_obj.year + 1, month=1)
+            else:
+                next_month = date_obj.replace(month=date_obj.month + 1)
+            last_day = next_month - timedelta(days=1)
+
+            # 遍历该月的每一天，判断是否为工作日
+            workdays = []
+            current_date = date_obj
+            while current_date <= last_day:
+                if is_workday(current_date):
+                    workdays.append(current_date.strftime("%Y-%m-%d"))
+                current_date += timedelta(days=1)
+
+            # 生成结果文本
+            workday_count = len(workdays)
+            workday_dates = "\n".join(workdays)
+            result = f'该月工作日天数: {workday_count}\n工作日日期:\n{workday_dates}'
+            self.output_text.setText(result)
+        except Exception as e:
+            self.output_text.setText(f'日期解析出错: {str(e)}')
 
 def main():
     app = QApplication(sys.argv)
